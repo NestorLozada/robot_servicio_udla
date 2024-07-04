@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 import { PorcupineWorker } from '@picovoice/porcupine-web';
+import "./App.css";
 
 // Imágenes utilizadas en el estado de la aplicación
 const images = {
@@ -75,7 +75,6 @@ const SpeechToTextComponent = () => {
       handleListen();
       setWakeWordDetected(false); // Reset the wake word detected state
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wakeWordDetected]);
 
   const handleListen = useCallback(() => {
@@ -93,10 +92,8 @@ const SpeechToTextComponent = () => {
       setStatus("Pensando");
       handleStop();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [browserSupportsSpeechRecognition]);
-  
-  // Función para detener el reconocimiento de voz
+
   const handleStop = () => {
     SpeechRecognition.stopListening();
     setText(transcript);
@@ -130,7 +127,6 @@ const SpeechToTextComponent = () => {
       setStatus("En espera");
       setImage(images.abierto);
     }
-
   };
 
   const handleSpeak = (textToSpeak) => {
@@ -153,36 +149,7 @@ const SpeechToTextComponent = () => {
     } else {
       alert("No hay contenido en el cuadro de texto");
     }
-
   };
-
-
-  // Función para manejar la detección de la frase desencadenadora
-  const handleWakeWord = () => {
-    if (!SpeechRecognition.browserSupportsSpeechRecognition()) {
-      alert("Tu navegador no soporta reconocimiento de voz");
-      return;
-    }
-    SpeechRecognition.startListening({ continuous: true, language: "es-ES" });
-
-    SpeechRecognition.onresult = (event) => {
-      const transcript = event.results[event.results.length - 1][0].transcript.trim();
-      if (transcript.toLowerCase().includes("hola uli")) {
-        SpeechRecognition.stopListening();
-        setStatus("Escuchando");
-        handleListen();
-
-        // Detener automáticamente después de 5 segundos
-        setTimeout(() => {
-          handleStop();
-        }, 5000);
-      }
-    };
-  };
-
-  useEffect(() => {
-    handleWakeWord();
-  }, []);
 
   return (
     <div className="centered">
