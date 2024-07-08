@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
-import { PorcupineWorker } from '@picovoice/porcupine-web';
+import SpeechRecognition, {
+  useSpeechRecognition,
+} from "react-speech-recognition";
+import { PorcupineWorker } from "@picovoice/porcupine-web";
+import { HubConnection, HubConnectionBuilder } from "@microsoft/signalr";
 import "./App.css";
 
 // Imágenes utilizadas en el estado de la aplicación
@@ -19,15 +22,44 @@ const SpeechToTextComponent = () => {
   const [status, setStatus] = useState("En espera"); // Estado para manejar el estado del reconocimiento de voz
   const [image, setImage] = useState(images.abierto); // Estado para manejar la imagen actual
   const [wakeWordDetected, setWakeWordDetected] = useState(false); // Estado para manejar la detección de la palabra clave
-  const { transcript, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition(); // Hook para el reconocimiento de voz
+  const { transcript, resetTranscript, browserSupportsSpeechRecognition } =
+    useSpeechRecognition(); // Hook para el reconocimiento de voz
   const porcupineWorkerRef = useRef(null);
+
+  //Estado de conexión para SignalR
+  const [connection, setConnection] = useState(null);
+
+  useEffect(() => {
+    // Crear una nueva conexión de SignalR
+    const newConnection = new HubConnectionBuilder()
+      .withUrl("http://localhost:5118/robot-hub")
+      .withAutomaticReconnect()
+      .build();
+
+    newConnection.on("RecibirData", (dataType, data) =>
+      //Hacer algo con los datos del robot
+      console.log(dataType, data)
+    );
+
+    setConnection(newConnection);
+  }, []);
+
+  // Establecer la conexión de SignalR
+  useEffect(() => {
+    if (connection) {
+      connection
+        .start()
+        .then(() => console.log("Connected!"))
+        .catch((e) => console.log("Connection failed: ", e));
+    }
+  }, [connection]);
 
   // Inicializar Porcupine
   useEffect(() => {
     const initPorcupine = async () => {
       try {
-        const accessKey = 'YOUR_ACCESS_KEY'; // Reemplaza con tu Access Key de Picovoice
-        const keywordPath = 'path/to/hola-mavi.ppn'; // Ruta al archivo .ppn
+        const accessKey = "YOUR_ACCESS_KEY"; // Reemplaza con tu Access Key de Picovoice
+        const keywordPath = "path/to/hola-mavi.ppn"; // Ruta al archivo .ppn
 
         const porcupineWorker = await PorcupineWorker.create(
           accessKey,
@@ -42,7 +74,7 @@ const SpeechToTextComponent = () => {
         porcupineWorkerRef.current = porcupineWorker;
         await porcupineWorker.start();
       } catch (error) {
-        console.error('Error initializing Porcupine:', error);
+        console.error("Error initializing Porcupine:", error);
       }
     };
 
@@ -60,11 +92,15 @@ const SpeechToTextComponent = () => {
     let interval;
     if (status === "En espera") {
       interval = setInterval(() => {
-        setImage(prevImage => (prevImage === images.feliz ? images.abierto : images.feliz));
+        setImage((prevImage) =>
+          prevImage === images.feliz ? images.abierto : images.feliz
+        );
       }, 2500); // 2s feliz, 0.5s abierto
     } else if (status === "Escuchando" || status === "Hablando") {
       interval = setInterval(() => {
-        setImage(prevImage => (prevImage === images.abierto ? images.feliz : images.abierto));
+        setImage((prevImage) =>
+          prevImage === images.abierto ? images.feliz : images.abierto
+        );
       }, 2500); // 2s abierto, 0.5s feliz
     }
     return () => clearInterval(interval); // Limpieza del intervalo cuando el componente se desmonta o el estado cambia
@@ -107,17 +143,17 @@ const SpeechToTextComponent = () => {
       fetch("http://localhost:3001/api/openai", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ prompt: transcript })
+        body: JSON.stringify({ prompt: transcript }),
       })
-        .then(response => response.json())
-        .then(data => {
+        .then((response) => response.json())
+        .then((data) => {
           const responseText = data.text; // Suponiendo que el backend devuelve { text: "respuesta del bot" }
           setStatus("Hablando");
           handleSpeak(responseText);
         })
-        .catch(error => {
+        .catch((error) => {
           console.error("Error al llamar a la API:", error);
           setStatus("En espera");
           setImage(images.abierto);

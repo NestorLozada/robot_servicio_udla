@@ -3,11 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@microsoft/signalr": "^8.0.0",
     "@picovoice/porcupine-react": "^3.0.3",
     "@picovoice/porcupine-react-native": "^3.0.2",
-
     "@picovoice/porcupine-web": "^3.0.3",
-
     "@picovoice/react-native-voice-processor": "^1.2.2",
     "@picovoice/web-voice-processor": "^4.0.9",
     "@testing-library/jest-dom": "^5.17.0",
